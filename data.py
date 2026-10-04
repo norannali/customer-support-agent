@@ -34,7 +34,9 @@ orders = {
         "tracking_number": "TRK456",
         "delivery_date": "2026-09-20",
         "return_days": 30,
-        "returned": False
+        "returned": False,
+        "refund_status": "Processing",
+        "refund_requested": True
     },
 
     "ORD103": {
