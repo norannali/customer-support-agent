@@ -2,7 +2,7 @@
 
 from langchain.tools import tool
 from data import customers, orders
-
+from datetime import date
 
 # TOOL 1: Get Customer Information
 @tool
@@ -83,7 +83,7 @@ def search_policy(topic: str) -> str:
 # TOOL 4: Calculate Refund
 @tool
 def calculate_refund(order_id: str, customer_id: str) -> dict:
-    """Calculate the refund amount after checking order ownership and eligibility."""
+    """Check refund eligibility or return the status of an existing refund."""
 
     order = orders.get(order_id)
 
@@ -93,24 +93,57 @@ def calculate_refund(order_id: str, customer_id: str) -> dict:
     if order["customer_id"] != customer_id:
         return {"error": "Unauthorized order access"}
 
+    order_context = {
+        "order_id": order_id,
+        "product": order["product"],
+        "status": order["status"],
+        "tracking_number": order.get("tracking_number"),
+        "delivery_date": order.get("delivery_date")
+    }
+
+    # Existing refund request
+    if order.get("refund_requested"):
+        return {
+            **order_context,
+            "refund_requested": True,
+            "refund_status": order.get("refund_status"),
+            "refund_amount": order["price"],
+            "currency": "EGP"
+        }
+
+    # New refund eligibility
     if order["status"] != "Delivered":
         return {
+            **order_context,
             "eligible": False,
             "reason": "Order has not been delivered yet"
+        }
+    delivery_date = date.fromisoformat(order["delivery_date"])
+    today = date.today()
+
+    days_since_delivery = (today - delivery_date).days
+
+    if days_since_delivery > 30:
+        return {
+            **order_context,
+            "eligible": False,
+            "reason": "The refund request is outside the 30-day refund window"
         }
 
     if order["returned"]:
         return {
+            **order_context,
             "eligible": False,
             "reason": "This order has already been refunded"
         }
 
     return {
+        **order_context,
         "eligible": True,
-        "order_id": order_id,
         "refund_amount": order["price"],
         "currency": "EGP"
     }
+    
 # TOOL 5: Check All Refunds for a Customer
 @tool
 def check_all_refunds(customer_id: str) -> list:

@@ -39,7 +39,7 @@ tools = [
 
 
 # 3. Structured Output
-#structured_llm = llm.with_structured_output(OrderStatus)
+# structured_llm = llm.with_structured_output(OrderStatus)
 
 
 # 4. System Prompt
@@ -78,6 +78,23 @@ Order Tracking Rules:
 - Never assume an order has been delivered.
   Use the actual order status.
 
+Structured Response Rules:
+
+- Whenever an order is included in the "orders" list,
+  always include all OrderInfo fields.
+- Required order fields must never be omitted.
+- If a field is not applicable or was not retrieved,
+  use null instead of omitting the field.
+- Never invent missing values.
+
+Missing Order Handling:
+
+- If a specific order ID is not found,
+  clearly inform the customer that the order does not exist.
+- Do not automatically retrieve or display all other orders.
+- Ask the customer to verify the order ID.
+- You may offer to show the customer's other orders if needed.
+
 For this demo:
 If the customer does not provide an order ID,
 you may retrieve their latest order using their customer ID.
@@ -103,11 +120,23 @@ def run_agent(question):
     print("CUSTOMER QUESTION:", question)
     print("-" * 60)
 
-    result = agent.invoke({
-        "messages": [
-            {"role": "user", "content": question}
-        ]
-    })
+    try:
+        result = agent.invoke({
+            "messages": [
+                {"role": "user", "content": question}
+            ]
+        })
+
+    except Exception as e:
+        print("\n--- AGENT ERROR ---")
+        print("Error Type:", type(e).__name__)
+        print("Error:", e)
+
+        if hasattr(e, "raw_output"):
+            print("\n--- RAW OUTPUT ---")
+            print(e.raw_output)
+
+        raise
 
     print("\n--- AGENT TRAJECTORY ---")
 
@@ -154,7 +183,6 @@ def run_agent(question):
 
 if __name__ == "__main__":
 
-    
     question = input("\nEnter customer question: ")
 
     run_agent(question)

@@ -46,7 +46,6 @@ orders = {
         "status": "Delivered",
         "tracking_number": "TRK789",
         "delivery_date": "2026-09-15",
-        "return_days": 14,
         "returned": False
     }
 }
